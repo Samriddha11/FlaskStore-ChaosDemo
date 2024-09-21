@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: storeFront
+  name: storefront
   namespace: flask-app-demo
 spec:
   selector:
     matchLabels:
-      app: storeFront
+      app: storefront
   replicas: 1
   template:
     metadata:
       labels:
-        app: storeFront
+        app: storefront
     spec:
       containers:
       - name: storeFront
-        image: neosam01/flaskredis:v1
+        image: neosam01/storefront:v1
         resources:
           requests:
             cpu: 100m
