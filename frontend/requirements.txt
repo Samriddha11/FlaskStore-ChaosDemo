@@ -1,0 +1,3 @@
+harness-featureflags==1.7.0
+Flask==2.3.2
+requests==2.32.0
