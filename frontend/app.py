@@ -11,7 +11,7 @@ client.wait_for_initialization()
 
 beta_testers = Target(identifier="test1", name="test1", attributes={"org": "blue"})
 
-HOST_NAME = 'http://flask-service:8989'
+HOST_NAME = 'http://storefront-service:8989'
 SERVICE_PATH = '/getproductdetails'
 
 URL = HOST_NAME + SERVICE_PATH

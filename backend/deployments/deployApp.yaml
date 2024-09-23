@@ -14,7 +14,7 @@ spec:
         app: storefront
     spec:
       containers:
-      - name: storeFront
+      - name: storefront
         image: neosam01/storefront:v1
         resources:
           requests:
