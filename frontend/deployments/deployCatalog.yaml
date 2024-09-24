@@ -15,11 +15,10 @@ spec:
     spec:
       containers:
       - name: productcatalog
-        image: neosam01/storecatalog:v1
+        image: neosam01/productcatalog:v2
         resources:
           requests:
             cpu: 100m
             memory: 100Mi
         ports:
         - containerPort: 5000
-kubectl get pods -n flask-app-demo --show-labels
