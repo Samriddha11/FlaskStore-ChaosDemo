@@ -28,19 +28,18 @@ def get_flag_status(flagstate):
 
 @app.route('/productdetails', methods=['GET'])
 def product_details():
-    result = get_flag_status("ProductDetails")
-    
-    if result:
-        response = requests.get(URL)
-        products = response.json()  # Assuming the response returns JSON data
+     result = get_flag_status("ProductDetails")
+     if result:
+         response = requests.get(URL)
+         products = response.json()  # Assuming the response returns JSON data
         
-        if validate(str(products)):
-            # Pass product data to the HTML template to display in a catalog format
-            return render_template('catalog.html', products=products)
-        else:
-            return "Bad Request, Corrupted Response", 500
-    else:
-        return jsonify({"error": "Feature Not Available"}), 404
+         if validate(str(products)):
+    #         # Pass product data to the HTML template to display in a catalog format
+             return render_template('catalog.html', products=products)
+         else:
+             return "Bad Request, Corrupted Response", 500
+     else:
+         return jsonify({"error": "Feature Not Available"}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)

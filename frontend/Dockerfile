@@ -10,6 +10,7 @@ COPY . /app
 # Install curl, ping, telnet, and necessary dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    vim \
     iputils-ping \
     telnet \
     && rm -rf /var/lib/apt/lists/*
