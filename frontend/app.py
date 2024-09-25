@@ -16,30 +16,54 @@ SERVICE_PATH = '/getproductdetails'
 
 URL = HOST_NAME + SERVICE_PATH
 
-def validate(response):
-    return "P" in response  # Simple validation for product data
+def validate(products):
+    """
+    Validates the structure of the product data to ensure it contains
+    the necessary keys: 'name', 'description', and 'price'.
+    """
+    if not isinstance(products, list):
+        return False
+    for product in products:
+        if not all(key in product for key in ["name", "description", "price"]):
+            return False
+    return True
 
 @app.route('/')
 def hello():
     return 'Welcome to the Site'
 
 def get_flag_status(flagstate):
+    """
+    Retrieves the feature flag status for the given flag state and target.
+    """
     return client.bool_variation(flagstate, beta_testers, False)
 
 @app.route('/productdetails', methods=['GET'])
 def product_details():
-     result = get_flag_status("ProductDetails")
-     if result:
-         response = requests.get(URL)
-         products = response.json()  # Assuming the response returns JSON data
+    """
+    Retrieves product details from the storefront-service and displays them in
+    a catalog format if the feature flag is enabled. If the response is invalid,
+    returns an appropriate error message.
+    """
+    result = get_flag_status("ProductDetails")
+    if result:
+        try:
+            response = requests.get(URL)
+            products = response.json()  # Try to parse the JSON response
+
+            if validate(products):
+                # Pass product data to the HTML template to display in a catalog format
+                return render_template('catalog.html', products=products)
+            else:
+                return "Bad Request, Corrupted Response", 500
         
-         if validate(str(products)):
-    #         # Pass product data to the HTML template to display in a catalog format
-             return render_template('catalog.html', products=products)
-         else:
-             return "Bad Request, Corrupted Response", 500
-     else:
-         return jsonify({"error": "Feature Not Available"}), 404
+        except ValueError:  # Catches JSONDecodeError or invalid JSON
+            return "Bad Request, Corrupted Response", 500
+        except requests.RequestException as e:
+            # Handle connection issues or other request-related errors
+            return jsonify({"error": "Service unavailable", "details": str(e)}), 503
+    else:
+        return jsonify({"error": "Feature Not Available"}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
