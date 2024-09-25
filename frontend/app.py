@@ -63,7 +63,8 @@ def product_details():
             # Handle connection issues or other request-related errors
             return jsonify({"error": "Service unavailable", "details": str(e)}), 503
     else:
-        return jsonify({"error": "Feature Not Available"}), 404
+        # Return a beautiful webpage when the feature is unavailable
+        return render_template('feature_unavailable.html'), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
