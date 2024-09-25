@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: productcatalog
-        image: neosam01/catalogfrontend:v3
+        image: neosam01/catalogfrontend:v4
         resources:
           requests:
             cpu: 100m
