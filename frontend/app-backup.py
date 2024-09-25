@@ -3,13 +3,12 @@ import boto3
 from flask import Flask, render_template, jsonify
 from featureflags.client import CfClient
 from featureflags.evaluations.auth_target import Target
-import json
 
 app = Flask(__name__)
 
-# api_key = '8430c8fb-711f-4215-92b9-0f4c738a9899'
-# client = CfClient(api_key)
-# client.wait_for_initialization()
+api_key = '8430c8fb-711f-4215-92b9-0f4c738a9899'
+client = CfClient(api_key)
+client.wait_for_initialization()
 
 beta_testers = Target(identifier="test1", name="test1", attributes={"org": "blue"})
 
@@ -18,23 +17,6 @@ SERVICE_PATH = '/getproductdetails'
 
 URL = HOST_NAME + SERVICE_PATH
 
-# AWS Secrets Manager setup
-def get_secret():
-    secret_name = "harness_api_key"
-    region_name = "us-east-1"  # Change this to your AWS region
-
-    # Create a Secrets Manager client
-    session = boto3.session.Session()
-    client = session.client(service_name='secretsmanager', region_name=region_name)
-
-    try:
-        # Retrieve secret value
-        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-        secret = get_secret_value_response['SecretString']
-        return json.loads(secret)['api_key']  # Assuming the key is stored as a JSON object
-    except Exception as e:
-        print(f"Error fetching API key from Secrets Manager: {e}")
-        raise
 
 def validate(products):
     """
@@ -56,26 +38,7 @@ def get_flag_status(flagstate):
     """
     Retrieves the feature flag status for the given flag state and target.
     """
-    #return client.bool_variation(flagstate, beta_testers, False)
-    try:
-        # Fetch the API key from Secrets Manager
-        api_key = get_secret()
-
-        # Initialize the feature flag client with the latest API key
-        client = CfClient(api_key)
-
-        # Wait for client initialization
-        client.wait_for_initialization()
-
-        # Ensure client is initialized before evaluating feature flag
-        if not client.is_initialized():
-            return jsonify({"status": "Failed to Initialize"}), 500
-        
-        result = client.bool_variation(flagstate, beta_testers, False)
-        return jsonify({"status": result}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+    return client.bool_variation(flagstate, beta_testers, False)
 
 @app.route('/productdetails', methods=['GET'])
 def product_details():
