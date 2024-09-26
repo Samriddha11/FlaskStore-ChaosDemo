@@ -13,9 +13,10 @@ spec:
       labels:
         app: productcatalog
     spec:
+      serviceAccountName: secretsademo
       containers:
       - name: productcatalog
-        image: neosam01/catalogfrontend:v4
+        image: neosam01/catalogfrontend:v5
         resources:
           requests:
             cpu: 100m
