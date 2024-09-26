@@ -3,8 +3,9 @@ import boto3
 from flask import Flask, render_template, jsonify
 from featureflags.client import CfClient
 from featureflags.evaluations.auth_target import Target
+from botocore.config import Config
+from botocore.exceptions import BotoCoreError, EndpointConnectionError, ConnectTimeoutError, ReadTimeoutError
 import json
-import time
 
 app = Flask(__name__)
 
@@ -15,23 +16,51 @@ SERVICE_PATH = '/getproductdetails'
 
 URL = HOST_NAME + SERVICE_PATH
 
+
+config = Config(
+        connect_timeout=2,         # 2 seconds to connect
+        read_timeout=2,            # 2 seconds to read
+        retries={
+            'max_attempts': 1,      # Retry up to 1 times
+            'mode': 'standard'      # Standard retry mode
+        }
+    )
+
 # AWS Secrets Manager setup
+# def get_secret():
+#     secret_name = "harness_api_key"
+#     region_name = "us-east-1"  # Change this to your AWS region
+
+#     # Create a Secrets Manager client
+#     session = boto3.session.Session()
+#     client = session.client(service_name='secretsmanager', region_name=region_name)
+
+#     try:
+#         # Retrieve secret value
+#         get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+#         secret = get_secret_value_response['SecretString']
+#         return json.loads(secret)['api_key']  # Assuming the key is stored as a JSON object
+#     except Exception as e:
+#         print(f"Error fetching API key from Secrets Manager: {e}")
+#         raise
+
 def get_secret():
     secret_name = "harness_api_key"
     region_name = "us-east-1"  # Change this to your AWS region
 
-    # Create a Secrets Manager client
     session = boto3.session.Session()
-    client = session.client(service_name='secretsmanager', region_name=region_name)
+    client = session.client(service_name='secretsmanager', region_name=region_name, config=config)
 
     try:
-        # Retrieve secret value
         get_secret_value_response = client.get_secret_value(SecretId=secret_name)
         secret = get_secret_value_response['SecretString']
         return json.loads(secret)['api_key']  # Assuming the key is stored as a JSON object
+    except (BotoCoreError, EndpointConnectionError, ConnectTimeoutError, ReadTimeoutError) as e:
+        print(f"Connection issue: {e}")
+        return None
     except Exception as e:
         print(f"Error fetching API key from Secrets Manager: {e}")
-        raise
+        return None
 
 def validate(products):
     """
@@ -48,7 +77,6 @@ def validate(products):
 def get_flag_status(flagstate):
     """
     Retrieves the feature flag status for the given flag state and target.
-    Handles case where client fails to initialize within 10 seconds.
     """
     try:
         # Fetch the API key from Secrets Manager
@@ -57,14 +85,13 @@ def get_flag_status(flagstate):
         # Initialize the feature flag client with the latest API key
         client = CfClient(api_key)
 
-        # Wait for client initialization with a 10-second timeout
-        start_time = time.time()
-        while not client.is_initialized():
-            if time.time() - start_time > 10:
-                raise Exception("Client failed to initialize within 10 seconds")
-            time.sleep(0.1)  # Sleep for 100ms before checking again
+        # Wait for client initialization
+        client.wait_for_initialization()
 
-        # Evaluate the feature flag
+        # Ensure client is initialized before evaluating feature flag
+        if not client.is_initialized():
+            raise Exception("Failed to Initialize")
+        
         return client.bool_variation(flagstate, beta_testers, False)
     except Exception as e:
         print(f"Error fetching feature flag status: {e}")
