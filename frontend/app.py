@@ -7,10 +7,6 @@ import json
 
 app = Flask(__name__)
 
-# api_key = '8430c8fb-711f-4215-92b9-0f4c738a9899'
-# client = CfClient(api_key)
-# client.wait_for_initialization()
-
 beta_testers = Target(identifier="test1", name="test1", attributes={"org": "blue"})
 
 HOST_NAME = 'http://storefront-service:8989'
@@ -48,15 +44,10 @@ def validate(products):
             return False
     return True
 
-@app.route('/')
-def hello():
-    return 'Welcome to the Site'
-
 def get_flag_status(flagstate):
     """
     Retrieves the feature flag status for the given flag state and target.
     """
-    #return client.bool_variation(flagstate, beta_testers, False)
     try:
         # Fetch the API key from Secrets Manager
         api_key = get_secret()
@@ -69,13 +60,16 @@ def get_flag_status(flagstate):
 
         # Ensure client is initialized before evaluating feature flag
         if not client.is_initialized():
-            return jsonify({"status": "Failed to Initialize"}), 500
+            raise Exception("Failed to Initialize")
         
-        result = client.bool_variation(flagstate, beta_testers, False)
-        return jsonify({"status": result}), 200
+        return client.bool_variation(flagstate, beta_testers, False)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error fetching feature flag status: {e}")
+        return False  # Consider the feature flag off in case of an error
 
+@app.route('/')
+def hello():
+    return 'Welcome to the Site'
 
 @app.route('/productdetails', methods=['GET'])
 def product_details():
@@ -84,8 +78,8 @@ def product_details():
     a catalog format if the feature flag is enabled. If the response is invalid,
     returns an appropriate error message.
     """
-    result = get_flag_status("ProductDetails")
-    if result:
+    flag_enabled = get_flag_status("ProductDetails")
+    if flag_enabled:
         try:
             response = requests.get(URL)
             products = response.json()  # Try to parse the JSON response
