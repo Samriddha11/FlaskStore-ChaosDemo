@@ -9,42 +9,26 @@ import json
 
 app = Flask(__name__)
 
+# Target for feature flag evaluation
 beta_testers = Target(identifier="test1", name="test1", attributes={"org": "blue"})
 
+# External service URL
 HOST_NAME = 'http://storefront-service:8989'
 SERVICE_PATH = '/getproductdetails'
-
 URL = HOST_NAME + SERVICE_PATH
 
-
+# Boto3 configuration for timeouts and retries
 config = Config(
-        connect_timeout=2,         # 2 seconds to connect
-        read_timeout=2,            # 2 seconds to read
-        retries={
-            'max_attempts': 1,      # Retry up to 1 times
-            'mode': 'standard'      # Standard retry mode
-        }
-    )
-
-# AWS Secrets Manager setup
-# def get_secret():
-#     secret_name = "harness_api_key"
-#     region_name = "us-east-1"  # Change this to your AWS region
-
-#     # Create a Secrets Manager client
-#     session = boto3.session.Session()
-#     client = session.client(service_name='secretsmanager', region_name=region_name)
-
-#     try:
-#         # Retrieve secret value
-#         get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-#         secret = get_secret_value_response['SecretString']
-#         return json.loads(secret)['api_key']  # Assuming the key is stored as a JSON object
-#     except Exception as e:
-#         print(f"Error fetching API key from Secrets Manager: {e}")
-#         raise
+    connect_timeout=2,         # 2 seconds to connect
+    read_timeout=2,            # 2 seconds to read
+    retries={
+        'max_attempts': 1,     # Retry up to 1 time
+        'mode': 'standard'     # Standard retry mode
+    }
+)
 
 def get_secret():
+    """Fetch the API key from AWS Secrets Manager."""
     secret_name = "harness_api_key"
     region_name = "us-east-1"  # Change this to your AWS region
 
@@ -52,21 +36,22 @@ def get_secret():
     client = session.client(service_name='secretsmanager', region_name=region_name, config=config)
 
     try:
+        # Retrieve secret value from AWS Secrets Manager
         get_secret_value_response = client.get_secret_value(SecretId=secret_name)
         secret = get_secret_value_response['SecretString']
         return json.loads(secret)['api_key']  # Assuming the key is stored as a JSON object
-    except (BotoCoreError, EndpointConnectionError, ConnectTimeoutError, ReadTimeoutError) as e:
-        print(f"Connection issue: {e}")
-        return None
+    except (ConnectTimeoutError, ReadTimeoutError) as e:
+        print(f"Timeout while connecting to Secrets Manager: {e}")
+        raise TimeoutError("Timeout while retrieving secret from AWS Secrets Manager")
+    except (BotoCoreError, EndpointConnectionError) as e:
+        print(f"Connection issue with Secrets Manager: {e}")
+        raise e  # Reraise to handle it later
     except Exception as e:
         print(f"Error fetching API key from Secrets Manager: {e}")
         return None
 
 def validate(products):
-    """
-    Validates the structure of the product data to ensure it contains
-    the necessary keys: 'name', 'description', and 'price'.
-    """
+    """Validate the product data structure."""
     if not isinstance(products, list):
         return False
     for product in products:
@@ -75,59 +60,55 @@ def validate(products):
     return True
 
 def get_flag_status(flagstate):
-    """
-    Retrieves the feature flag status for the given flag state and target.
-    """
+    """Retrieve the feature flag status."""
     try:
-        # Fetch the API key from Secrets Manager
         api_key = get_secret()
+        if api_key is None:
+            raise Exception("Failed to retrieve API key from Secrets Manager")
 
-        # Initialize the feature flag client with the latest API key
+        # Initialize the feature flag client with the retrieved API key
         client = CfClient(api_key)
-
-        # Wait for client initialization
         client.wait_for_initialization()
 
-        # Ensure client is initialized before evaluating feature flag
         if not client.is_initialized():
-            raise Exception("Failed to Initialize")
+            raise Exception("Failed to Initialize Harness Feature Flags client")
         
         return client.bool_variation(flagstate, beta_testers, False)
+    except TimeoutError:
+        raise
     except Exception as e:
         print(f"Error fetching feature flag status: {e}")
         return False  # Consider the feature flag off in case of an error
 
 @app.route('/')
 def hello():
+    """Simple route to confirm the service is running."""
     return 'Welcome to the Site'
 
 @app.route('/productdetails', methods=['GET'])
 def product_details():
-    """
-    Retrieves product details from the storefront-service and displays them in
-    a catalog format if the feature flag is enabled. If the response is invalid,
-    returns an appropriate error message.
-    """
-    flag_enabled = get_flag_status("ProductDetails")
-    if flag_enabled:
-        try:
-            response = requests.get(URL)
-            products = response.json()  # Try to parse the JSON response
+    """Retrieve and display product details if the feature flag is enabled."""
+    try:
+        flag_enabled = get_flag_status("ProductDetails")
+        if flag_enabled:
+            try:
+                response = requests.get(URL)
+                products = response.json()  # Try to parse the JSON response
 
-            if validate(products):
-                # Pass product data to the HTML template to display in a catalog format
-                return render_template('catalog.html', products=products)
-            else:
+                if validate(products):
+                    return render_template('catalog.html', products=products)
+                else:
+                    return "Bad Request, Corrupted Response", 500
+            except ValueError:  # Catches JSONDecodeError or invalid JSON
                 return "Bad Request, Corrupted Response", 500
-        
-        except ValueError:  # Catches JSONDecodeError or invalid JSON
-            return "Bad Request, Corrupted Response", 500
-        except requests.RequestException as e:
-            # Handle connection issues or other request-related errors
-            return jsonify({"error": "Service unavailable", "details": str(e)}), 503
-    else:
-        # Return a beautiful webpage when the feature is unavailable
-        return render_template('feature_unavailable.html'), 200
+            except requests.RequestException as e:
+                return jsonify({"error": "Service unavailable", "details": str(e)}), 503
+        else:
+            return render_template('feature_unavailable.html'), 200
+    except TimeoutError:
+        return jsonify({"error": "Request to AWS Secrets Manager timed out"}), 504
+    except Exception as e:
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
