@@ -4,6 +4,7 @@ from flask import Flask, render_template, jsonify
 from featureflags.client import CfClient
 from featureflags.evaluations.auth_target import Target
 import json
+import time
 
 app = Flask(__name__)
 
@@ -47,6 +48,7 @@ def validate(products):
 def get_flag_status(flagstate):
     """
     Retrieves the feature flag status for the given flag state and target.
+    Handles case where client fails to initialize within 10 seconds.
     """
     try:
         # Fetch the API key from Secrets Manager
@@ -55,13 +57,14 @@ def get_flag_status(flagstate):
         # Initialize the feature flag client with the latest API key
         client = CfClient(api_key)
 
-        # Wait for client initialization
-        client.wait_for_initialization()
+        # Wait for client initialization with a 10-second timeout
+        start_time = time.time()
+        while not client.is_initialized():
+            if time.time() - start_time > 10:
+                raise Exception("Client failed to initialize within 10 seconds")
+            time.sleep(0.1)  # Sleep for 100ms before checking again
 
-        # Ensure client is initialized before evaluating feature flag
-        if not client.is_initialized():
-            raise Exception("Failed to Initialize")
-        
+        # Evaluate the feature flag
         return client.bool_variation(flagstate, beta_testers, False)
     except Exception as e:
         print(f"Error fetching feature flag status: {e}")
