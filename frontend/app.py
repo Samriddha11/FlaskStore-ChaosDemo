@@ -64,20 +64,23 @@ def get_flag_status(flagstate):
     try:
         api_key = get_secret()
         if api_key is None:
-            raise Exception("Failed to retrieve API key from Secrets Manager")
+            print("Failed to retrieve API key, returning False for flag status.")
+            return False
 
         # Initialize the feature flag client with the retrieved API key
         client = CfClient(api_key)
         client.wait_for_initialization()
 
         if not client.is_initialized():
-            raise Exception("Failed to Initialize Harness Feature Flags client")
+            print("Feature flag client failed to initialize, returning False for flag status.")
+            return False
         
         return client.bool_variation(flagstate, beta_testers, False)
-    except TimeoutError:
-        raise
+    except TimeoutError as e:
+        print(f"TimeoutError in get_flag_status: {e}")
+        return False
     except Exception as e:
-        print(f"Error fetching feature flag status: {e}")
+        print(f"Exception in get_flag_status: {e}")
         return False  # Consider the feature flag off in case of an error
 
 @app.route('/')
@@ -90,6 +93,8 @@ def product_details():
     """Retrieve and display product details if the feature flag is enabled."""
     try:
         flag_enabled = get_flag_status("ProductDetails")
+        print(f"Feature flag status for 'ProductDetails': {flag_enabled}")
+        
         if flag_enabled:
             try:
                 response = requests.get(URL)
@@ -98,16 +103,22 @@ def product_details():
                 if validate(products):
                     return render_template('catalog.html', products=products)
                 else:
+                    print("Invalid product data structure received.")
                     return "Bad Request, Corrupted Response", 500
             except ValueError:  # Catches JSONDecodeError or invalid JSON
+                print("Invalid JSON response received.")
                 return "Bad Request, Corrupted Response", 500
             except requests.RequestException as e:
+                print(f"Error during request to external service: {e}")
                 return jsonify({"error": "Service unavailable", "details": str(e)}), 503
         else:
+            print("Feature flag is disabled or an error occurred. Showing feature unavailable page.")
             return render_template('feature_unavailable.html'), 200
     except TimeoutError:
+        print("Timeout while retrieving secret, returning 504 error.")
         return jsonify({"error": "Request to AWS Secrets Manager timed out"}), 504
     except Exception as e:
+        print(f"Internal server error: {e}")
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
 if __name__ == '__main__':
