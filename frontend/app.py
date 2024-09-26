@@ -72,10 +72,10 @@ def get_flag_status(flagstate):
         # Instead of waiting for initialization, attempt to retrieve the flag directly
         if not client.is_initialized():
             print("Feature flag client is not initialized, returning False for flag status.")
-            return False
+            return client.bool_variation(flagstate, beta_testers, False)
         
         # Fetch the flag status without waiting
-        return client.bool_variation(flagstate, beta_testers, False)
+        return client.bool_variation(flagstate, beta_testers, True)
     except (TimeoutError, ConnectTimeoutError, ReadTimeoutError) as e:
         print(f"Timeout or connection error in get_flag_status: {e}")
         return False
