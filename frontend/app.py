@@ -58,6 +58,7 @@ def validate(products):
         if not all(key in product for key in ["name", "description", "price"]):
             return False
     return True
+
 def get_flag_status(flagstate):
     """Retrieve the feature flag status."""
     try:
@@ -69,20 +70,19 @@ def get_flag_status(flagstate):
         # Initialize the feature flag client with the retrieved API key
         client = CfClient(api_key)
 
-        # Instead of waiting for initialization, attempt to retrieve the flag directly
+        # Attempt to retrieve the flag directly
         if not client.is_initialized():
             print("Feature flag client is not initialized, returning False for flag status.")
-            return client.bool_variation(flagstate, beta_testers, False)
+            return False
         
         # Fetch the flag status without waiting
-        return client.bool_variation(flagstate, beta_testers, True)
+        return client.bool_variation(flagstate, beta_testers, False)
     except (TimeoutError, ConnectTimeoutError, ReadTimeoutError) as e:
         print(f"Timeout or connection error in get_flag_status: {e}")
         return False
     except Exception as e:
         print(f"Exception in get_flag_status: {e}")
         return False  # Consider the feature flag off in case of an error
-
 
 @app.route('/')
 def hello():
