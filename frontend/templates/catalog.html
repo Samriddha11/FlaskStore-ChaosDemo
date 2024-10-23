@@ -11,11 +11,15 @@
             padding: 0;
             background-color: #6a0dad; /* Purple background */
             color: #ffa500; /* Orange text */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
         .container {
             width: 80%;
             margin: 50px auto;
             text-align: center;
+            flex-grow: 1;
         }
         h1 {
             color: #ffa500; /* Orange text for title */
@@ -29,6 +33,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
+            justify-items: center;
         }
         .product-card {
             background-color: #fff; /* White background for cards */
@@ -36,6 +41,8 @@
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             transition: transform 0.3s, box-shadow 0.3s;
+            width: 100%;
+            max-width: 300px;
         }
         .product-card:hover {
             transform: scale(1.05);
@@ -54,7 +61,6 @@
             color: #ff4500; /* Stronger orange for price */
         }
         footer {
-            margin-top: 50px;
             padding: 20px;
             background-color: #4b0082; /* Darker purple for footer */
             color: #ffa500;
