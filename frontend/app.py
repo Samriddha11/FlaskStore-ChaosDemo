@@ -19,8 +19,8 @@ URL = HOST_NAME + SERVICE_PATH
 
 # Boto3 configuration for timeouts and retries
 config = Config(
-    connect_timeout=2,         # 2 seconds to connect
-    read_timeout=2,            # 2 seconds to read
+    connect_timeout=1,         # 2 seconds to connect
+    read_timeout=1,            # 2 seconds to read
     retries={
         'max_attempts': 1,     # Retry up to 1 time
         'mode': 'standard'     # Standard retry mode
