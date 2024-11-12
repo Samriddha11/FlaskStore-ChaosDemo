@@ -79,7 +79,7 @@ def get_flag_status(flagstate):
         return flag_status
         
         # Fetch the flag status without waiting
-        return client.bool_variation(flagstate, beta_testers, True)
+        #return client.bool_variation(flagstate, beta_testers, True)
     except (TimeoutError, ConnectTimeoutError, ReadTimeoutError) as e:
         print(f"Timeout or connection error in get_flag_status: {e}")
         return False
