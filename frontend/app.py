@@ -61,27 +61,32 @@ def validate(products):
 def get_flag_status(flagstate):
     """Retrieve the feature flag status."""
     try:
+        # Retrieve the API key from AWS Secrets Manager
         api_key = get_secret()
         if api_key is None:
             print("Failed to retrieve API key, returning False for flag status.")
             return False
 
-        # Initialize the feature flag client with the retrieved API key
+        # Initialize the feature flag client with the API key
         client = CfClient(api_key)
 
-        # Instead of waiting for initialization, attempt to retrieve the flag directly
-        if not client.is_initialized():
+        # Check if the client is initialized before evaluating the flag
+        if client.is_initialized():
+            # Fetch the flag status for the provided flagstate and target
+            return client.bool_variation(flagstate, beta_testers, default=True)
+        else:
             print("Feature flag client is not initialized, returning False for flag status.")
-            return client.bool_variation(flagstate, beta_testers, False)
-        
-        # Fetch the flag status without waiting
-        return client.bool_variation(flagstate, beta_testers, True)
+            return False
+
     except (TimeoutError, ConnectTimeoutError, ReadTimeoutError) as e:
+        # Log timeout and connection-related errors
         print(f"Timeout or connection error in get_flag_status: {e}")
         return False
     except Exception as e:
+        # Log any other exceptions and return False
         print(f"Exception in get_flag_status: {e}")
-        return False  # Consider the feature flag off in case of an error
+        return False  # Assume flag is off in case of error
+
 
 
 @app.route('/')
