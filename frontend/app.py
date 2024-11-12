@@ -70,9 +70,9 @@ def get_flag_status(flagstate):
         # Initialize the feature flag client with the retrieved API key
         client = CfClient(api_key)
 
-        if not client.is_initialized():
-            print("Feature flag client is not initialized, returning False for flag status.")
-            return False
+        #if not client.is_initialized():
+        #    print("Feature flag client is not initialized, returning False for flag status.")
+        #    return False
 
         # Attempt to retrieve the flag status directly
         return client.bool_variation(flagstate, beta_testers, False)
