@@ -19,8 +19,8 @@ URL = HOST_NAME + SERVICE_PATH
 
 # Boto3 configuration for timeouts and retries
 config = Config(
-    connect_timeout=1,         # 1 second to connect
-    read_timeout=1,            # 1 second to read
+    connect_timeout=2,         # 2 seconds to connect
+    read_timeout=2,            # 2 seconds to read
     retries={
         'max_attempts': 1,     # Retry up to 1 time
         'mode': 'standard'     # Standard retry mode
@@ -42,10 +42,10 @@ def get_secret():
         return json.loads(secret)['api_key']  # Assuming the key is stored as a JSON object
     except (ConnectTimeoutError, ReadTimeoutError) as e:
         print(f"Timeout while connecting to Secrets Manager: {e}")
-        return None
+        raise TimeoutError("Timeout while retrieving secret from AWS Secrets Manager")
     except (BotoCoreError, EndpointConnectionError) as e:
         print(f"Connection issue with Secrets Manager: {e}")
-        return None
+        raise e  # Reraise to handle it later
     except Exception as e:
         print(f"Error fetching API key from Secrets Manager: {e}")
         return None
@@ -58,7 +58,6 @@ def validate(products):
         if not all(key in product for key in ["name", "description", "price"]):
             return False
     return True
-
 def get_flag_status(flagstate):
     """Retrieve the feature flag status."""
     try:
@@ -70,18 +69,20 @@ def get_flag_status(flagstate):
         # Initialize the feature flag client with the retrieved API key
         client = CfClient(api_key)
 
+        # Instead of waiting for initialization, attempt to retrieve the flag directly
         if not client.is_initialized():
             print("Feature flag client is not initialized, returning False for flag status.")
-            return False
-
-        # Attempt to retrieve the flag status directly
-        return client.bool_variation(flagstate, beta_testers, False)
+            return client.bool_variation(flagstate, beta_testers, False)
+        
+        # Fetch the flag status without waiting
+        return client.bool_variation(flagstate, beta_testers, True)
     except (TimeoutError, ConnectTimeoutError, ReadTimeoutError) as e:
         print(f"Timeout or connection error in get_flag_status: {e}")
         return False
     except Exception as e:
         print(f"Exception in get_flag_status: {e}")
         return False  # Consider the feature flag off in case of an error
+
 
 @app.route('/')
 def hello():
