@@ -16,7 +16,7 @@ spec:
       serviceAccountName: secretsademo
       containers:
       - name: productcatalog
-        image: neosam01/catalogfrontend:v18
+        image: neosam01/catalogfrontend:v19
         resources:
           requests:
             cpu: 100m
