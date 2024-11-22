@@ -3,43 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feature Unavailable</title>
+    <title>Product Catalog</title>
     <style>
         body {
+            font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             background-color: #6a0dad; /* Purple background */
-            color: #ffffff; /* White text */
-            font-family: 'Arial', sans-serif;
-            text-align: center;
+            color: #ffa500; /* Orange text */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
         .container {
-            max-width: 600px;
+            width: 80%;
+            margin: 50px auto;
+            text-align: center;
+            flex-grow: 1;
         }
         h1 {
+            color: #ffa500; /* Orange text for title */
             font-size: 3rem;
-            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
         }
-        p {
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            justify-items: center;
+        }
+        .product-card {
+            background-color: #fff; /* White background for cards */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            width: 100%;
+            max-width: 300px;
+        }
+        .product-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+        .product-card h3 {
+            margin: 0;
             font-size: 1.5rem;
+            color: #6a0dad; /* Purple text for product names */
         }
-        .logo {
-            width: 150px;
-            height: auto;
-            margin-bottom: 20px;
+        .product-card p {
+            font-size: 1rem;
+            color: #333; /* Darker text for descriptions */
+        }
+        .product-card p strong {
+            color: #ff4500; /* Stronger orange for price */
+        }
+        .payment-frame {
+            position: fixed;
+            bottom: 200px; /* Space from the bottom */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff; /* White background for the frame */
+            padding: 20px;
+            border: 2px solid #ffa500; /* Orange border */
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            z-index: 10;
+        }
+        .payment-button {
+            background-color: #ffa500; /* Orange background for buttons */
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .payment-button:hover {
+            background-color: #ff4500; /* Darker orange on hover */
+        }
+        footer {
+            padding: 20px;
+            background-color: #4b0082; /* Darker purple for footer */
+            color: #ffa500;
+            text-align: center;
+            font-size: 1rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Gone Fishing!</h1>
-    <p>Feature is unavailable at this moment.</p>
+    <h1>Product Catalog</h1>
+    <div class="product-grid">
+        {% for product in products %}
+        <div class="product-card">
+            <h3>{{ product.name }}</h3>
+            <p>{{ product.description }}</p>
+            <p><strong>Price:</strong> ${{ product.price }}</p>
+        </div>
+        {% endfor %}
+    </div>
 </div>
+
+<!-- Payment Gateway Options at the bottom with a frame -->
+<div class="payment-frame">
+    <button class="payment-button" onclick="window.location.href='https://www.paypal.com'">Pay with PayPal</button>
+    <button class="payment-button" onclick="window.location.href='https://www.stripe.com'">Pay with Stripe</button>
+    <button class="payment-button" onclick="window.location.href='https://www.razorpay.com'">Pay with Razorpay</button>
+</div>
+
+<footer>
+    <p>Harness Chaos Engineering Demo Page</p>
+</footer>
 
 </body>
 </html>
