@@ -60,6 +60,25 @@
         .product-card p strong {
             color: #ff4500; /* Stronger orange for price */
         }
+        .payment-options {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .payment-button {
+            background-color: #ffa500; /* Orange background for buttons */
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .payment-button:hover {
+            background-color: #ff4500; /* Darker orange on hover */
+        }
         footer {
             padding: 20px;
             background-color: #4b0082; /* Darker purple for footer */
@@ -82,6 +101,13 @@
             <p><strong>Price:</strong> ${{ product.price }}</p>
         </div>
         {% endfor %}
+    </div>
+
+    <!-- Payment Gateway Options -->
+    <div class="payment-options">
+        <button class="payment-button" onclick="window.location.href='https://www.paypal.com'">Pay with PayPal</button>
+        <button class="payment-button" onclick="window.location.href='https://www.stripe.com'">Pay with Stripe</button>
+        <button class="payment-button" onclick="window.location.href='https://www.razorpay.com'">Pay with Razorpay</button>
     </div>
 </div>
 
